@@ -1,0 +1,14 @@
+version: '3'
+services:
+  node_pod:
+    build: ./node_pod
+    ports:
+      - "3030:3030"
+  python_pod:
+    build: ./python_pod
+    ports:
+      - "3031:3031"
+  c_pod:
+    build: ./c_pod
+    ports:
+      - "3032:3032"

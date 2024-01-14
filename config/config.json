@@ -1,0 +1,10 @@
+{
+    "listenPort": ":8080",
+    "remoteServerAddr": "localhost:3000",
+    "proxyLogFileName": "logs/proxy_logs.txt",
+    "wafLogFileName": "logs/waf_logs.txt",
+    "destinationToLabel": {
+        "/": "SQL",
+        "/test": "XSS"
+    }
+}
