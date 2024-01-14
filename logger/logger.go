@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"example.com/config"
+	"github.com/47Cid/Castle/config"
 	"github.com/sirupsen/logrus"
 )
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"example.com/config"
-	"example.com/message"
+	"github.com/47Cid/Castle/config"
+	"github.com/47Cid/Castle/message"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
