@@ -1,4 +1,4 @@
-module example.com
+module github.com/47Cid/Castle
 
 go 1.21.6
 
