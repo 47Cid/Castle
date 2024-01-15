@@ -1,4 +1,4 @@
-package verify
+package pod
 
 import (
 	"context"
@@ -129,7 +129,6 @@ func processMessage(pod Pod, message message.Message) bool {
 }
 
 func initFunc() {
-
 	// Create a docker client
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
