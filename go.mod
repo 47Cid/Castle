@@ -1,6 +1,6 @@
 module github.com/47Cid/Castle
 
-go 1.21.6
+go 1.23
 
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
