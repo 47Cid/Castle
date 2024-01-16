@@ -1,12 +1,13 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
+	"io"
 	"log"
 	"net"
-	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/47Cid/Castle/config"
@@ -33,8 +34,18 @@ func main() {
 
 	logger.ProxyLog.Infof("Server listening on %s", listener.Addr().String())
 
+	// Create a channel to receive signals
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
 	// WaitGroup for handling client connections
 	var wg sync.WaitGroup
+
+	go func() {
+		<-signalChan
+		logger.ProxyLog.Info("Received termination signal. Initiating graceful exit.")
+		os.Exit(0)
+	}()
 
 	// Handle incoming connections
 	for {
@@ -47,13 +58,31 @@ func main() {
 		wg.Add(1)
 		go handleClient(&wg, clientConn)
 	}
+}
 
-	// Wait for all client connections to be handled
-	wg.Wait()
+func forwardMessage(conn net.Conn, msg message.Message) {
+	logger.ProxyLog.Infof("Valid request from client")
+	targetConn, err := net.Dial("tcp", config.GetRemoteServerAddr())
+	if err != nil {
+		log.Printf("Error connecting to target server: %v", err)
+		return
+	}
+	defer targetConn.Close()
+	go func() {
+		_, err = io.Copy(conn, targetConn)
+		if err != nil {
+			log.Printf("Error copying data from server to client: %v", err)
+		}
+	}()
+	_, err = io.Copy(targetConn, conn)
+	if err != nil {
+		log.Printf("Error copying data from client to server: %v", err)
+	}
 }
 
 func handleClient(wg *sync.WaitGroup, conn net.Conn) {
 	defer wg.Done()
+	defer conn.Close()
 
 	// Get the client IP
 	clientIP := conn.RemoteAddr().(*net.TCPAddr).IP
@@ -61,36 +90,50 @@ func handleClient(wg *sync.WaitGroup, conn net.Conn) {
 	// Get the current timestamp
 	timestamp := time.Now()
 
-	// Read data from the client connection
-	buffer := make([]byte, 4096)
-	n, err := conn.Read(buffer)
-	if err != nil {
-		logger.ProxyLog.Errorf("Error reading from client: %v", err)
-		return
-	}
-
-	// Parse the HTTP request
-	req, err := http.ReadRequest(bufio.NewReader(bytes.NewReader(buffer[:n])))
-	if err != nil {
-		logger.ProxyLog.Errorf("Error parsing HTTP request: %v", err)
-		return
-	}
-	// Get the destination URL
-	destinationURL := req.URL.String()
-
 	msg := message.Message{
-		Data:        buffer[:n],
-		Destination: destinationURL,
-		ClientIP:    clientIP,
-		Timestamp:   timestamp,
+		ClientIP:  clientIP,
+		Timestamp: timestamp,
 	}
+
+	// Log the message
+	logger.ProxyLog.Infof("Received message: %+v", msg)
 
 	// Call the verify function from waf_pod
 	isValid := pod.VerifyMessage(msg)
 	if !isValid {
 		logger.ProxyLog.Errorf("Invalid request from client: %v", conn.RemoteAddr())
+
+		// Define the path to the HTML file
+		htmlFilePath := "assets/error.html"
+
+		// Read the HTML file
+		htmlData, err := os.ReadFile(htmlFilePath)
+		if err != nil {
+			logger.ProxyLog.Errorf("Error reading HTML file: %v", err)
+			return
+		}
+
+		// Write the HTTP response status line
+		_, err = conn.Write([]byte("HTTP/1.1 403 Forbidden\r\n"))
+		if err != nil {
+			logger.ProxyLog.Errorf("Error writing response: %v", err)
+			return
+		}
+
+		// Write the Content-Type header
+		_, err = conn.Write([]byte("Content-Type: text/html\r\n\r\n"))
+		if err != nil {
+			logger.ProxyLog.Errorf("Error writing response: %v", err)
+			return
+		}
+
+		// Write the HTML data
+		_, err = conn.Write(htmlData)
+		if err != nil {
+			logger.ProxyLog.Errorf("Error writing response: %v", err)
+		}
 		return
 	}
-
-	// TODO: Handle the client request
+	//Forward the message to the server
+	forwardMessage(conn, msg)
 }

@@ -24,7 +24,6 @@ var pods []Pod
 var currentIndex = 0
 
 func GetPods(dockerClient client.Client) {
-
 	// List containers
 	containers, err := dockerClient.ContainerList(context.Background(), types.ContainerListOptions{})
 	if err != nil {
@@ -68,7 +67,7 @@ func GetPods(dockerClient client.Client) {
 	}
 }
 
-func printPods(dockerClient client.Client) {
+func logPods(dockerClient client.Client) {
 	for _, pod := range pods {
 		inspect, err := dockerClient.ContainerInspect(context.Background(), pod.container.ID)
 		if err != nil {
@@ -128,13 +127,12 @@ func processMessage(pod Pod, message message.Message) bool {
 
 }
 
-func initFunc() {
+func InitPods() {
 	// Create a docker client
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		panic(err)
 	}
-
 	GetPods(*dockerClient)
-	// printPods(*dockerClient)
+	logPods(*dockerClient)
 }
