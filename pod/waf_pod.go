@@ -2,15 +2,14 @@ package pod
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/47Cid/Castle/config"
+	"github.com/47Cid/Castle/logger"
 	"github.com/47Cid/Castle/message"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/sirupsen/logrus"
 )
 
 type Pod struct {
@@ -46,13 +45,13 @@ func GetPods(dockerClient client.Client) {
 
 		weightStr, ok := labels["weight"]
 		if !ok {
-			logrus.Error("weight label not found")
+			logger.WAFLog.Errorf("weight label not found")
 			continue
 		}
 
 		weight, err := strconv.Atoi(weightStr)
 		if err != nil {
-			logrus.Errorf("error converting weight to integer: %v", err)
+			logger.WAFLog.Errorf("error converting weight to integer: %v", err)
 			continue
 		}
 
@@ -73,18 +72,18 @@ func logPods(dockerClient client.Client) {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("Container ID: %s\n", pod.container.ID)
-		fmt.Printf("Image: %s\n", pod.container.Image)
-		fmt.Printf("Command: %s\n", pod.container.Command)
-		fmt.Printf("Status: %s\n", pod.container.Status)
-		fmt.Printf("IsBusy: %v\n", pod.isBusy)
-		fmt.Printf("PodType: %s\n", pod.podType)
-		fmt.Printf("Weight: %d\n", pod.weight)
-		fmt.Printf("IPAddress: %s\n", inspect.NetworkSettings.IPAddress) // Print the IP address
+		logger.WAFLog.Infof("Container ID: %s\n", pod.container.ID)
+		logger.WAFLog.Infof("Image: %s\n", pod.container.Image)
+		logger.WAFLog.Infof("Command: %s\n", pod.container.Command)
+		logger.WAFLog.Infof("Status: %s\n", pod.container.Status)
+		logger.WAFLog.Infof("IsBusy: %v\n", pod.isBusy)
+		logger.WAFLog.Infof("PodType: %s\n", pod.podType)
+		logger.WAFLog.Infof("Weight: %d\n", pod.weight)
+		logger.WAFLog.Infof("IPAddress: %s\n", inspect.NetworkSettings.IPAddress) // Print the IP address
 		// Print the port numbers
 		for _, portBindings := range inspect.NetworkSettings.Ports {
 			if len(portBindings) > 0 {
-				fmt.Printf("Port: %s\n", portBindings[0].HostPort)
+				logger.WAFLog.Infof("Port: %s\n", portBindings[0].HostPort)
 			}
 		}
 
@@ -116,7 +115,7 @@ func VerifyMessage(message message.Message) bool {
 		// If the current pod is busy or has a weight of 0, move to the next pod
 		currentIndex = (currentIndex + 1) % len(pods)
 	}
-	logrus.Error("No pods available")
+	logger.WAFLog.Error("No pods available")
 	// If no pods are available, return false
 	return true
 }
@@ -127,7 +126,11 @@ func processMessage(pod Pod, message message.Message) bool {
 
 }
 
-func InitPods() {
+func Init() {
+	// Initialize the logger
+	logger.InitWAFProxy()
+
+	logger.WAFLog.Info("Initializing pods")
 	// Create a docker client
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {

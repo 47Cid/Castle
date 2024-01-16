@@ -6,6 +6,8 @@ ADD . /app
 
 LABEL type="XML"
 
+LABEL weight=1
+
 RUN gcc -o server server.c
 
 EXPOSE 3032
