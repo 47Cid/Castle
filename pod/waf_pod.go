@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
+	podAPI "github.com/47Cid/Castle/api"
 	"github.com/47Cid/Castle/config"
 	"github.com/47Cid/Castle/logger"
 	"github.com/47Cid/Castle/message"
@@ -166,18 +167,15 @@ func processMessage(pod Pod, message message.Message) bool {
 	// Log the response body
 	logger.WAFLog.Infof("Received response: %s", string(body))
 
-	type Response struct {
-		Valid string `json:"isValid"`
-	}
-	var resp1 Response
-	err = json.Unmarshal(body, &resp1)
+	var podResp podAPI.Response
+	err = json.Unmarshal(body, &podResp)
 	if err != nil {
 		logger.WAFLog.Errorf("Error parsing JSON response: %v", err)
 		return false
 	}
-	logger.WAFLog.Infof("Raw response from pod: %+v", resp1.Valid)
+	logger.WAFLog.Infof("Raw response from pod: %+v", podResp.Valid)
 
-	isValid, err := strconv.ParseBool(resp1.Valid)
+	isValid, err := strconv.ParseBool(podResp.Valid)
 	if err != nil {
 		logger.WAFLog.Errorf("Error converting string to bool: %v", err)
 		return false
