@@ -2,6 +2,10 @@ package pod
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 
 	"github.com/47Cid/Castle/config"
@@ -13,10 +17,12 @@ import (
 )
 
 type Pod struct {
-	container types.Container
-	isBusy    bool
-	podType   string
-	weight    int
+	container     types.Container
+	isBusy        bool
+	podType       string
+	weight        int
+	containerIP   string
+	containerPort string
 }
 
 var pods []Pod
@@ -55,11 +61,24 @@ func GetPods(dockerClient client.Client) {
 			continue
 		}
 
+		// Get the IP address of the Docker container
+		containerIP := inspect.NetworkSettings.IPAddress
+		// Get the port mapping of the Docker container
+		containerPort := ""
+		for _, port := range container.Ports {
+			if port.PublicPort != 0 {
+				containerPort = fmt.Sprintf("%d:%d", port.PrivatePort, port.PublicPort)
+				break
+			}
+		}
+
 		pod := Pod{
-			container: container,
-			isBusy:    false,
-			podType:   pType,
-			weight:    weight,
+			container:     container,
+			isBusy:        false,
+			podType:       pType,
+			weight:        weight,
+			containerIP:   containerIP,
+			containerPort: containerPort,
 		}
 
 		pods = append(pods, pod)
@@ -117,13 +136,55 @@ func VerifyMessage(message message.Message) bool {
 	}
 	logger.WAFLog.Error("No pods available")
 	// If no pods are available, return false
-	return true
+	return false
 }
 
 func processMessage(pod Pod, message message.Message) bool {
 	// TODO: Implement this function to process the message using the given pod
-	return true
+	logger.WAFLog.Infof("Processing message %+v using pod %+v", message.Destination, pod.podType)
 
+	// Create the URL for the /verify endpoint
+	verifyURL := fmt.Sprintf("http://%s:%s/verify", "localhost", "3032")
+
+	// Send an HTTP GET request to the server running inside the pod
+	resp, err := http.Get(verifyURL)
+	if err != nil {
+		logger.WAFLog.Errorf("Error sending GET request to %s: %v", verifyURL, err)
+		return false
+	}
+	defer resp.Body.Close()
+	logger.WAFLog.Info("GET request sent, reading response body")
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.WAFLog.Errorf("Error reading response body: %v", err)
+		return false
+	}
+	logger.WAFLog.Info("Response body read, logging response")
+
+	// Log the response body
+	logger.WAFLog.Infof("Received response: %s", string(body))
+
+	type Response struct {
+		Valid string `json:"isValid"`
+	}
+	var resp1 Response
+	err = json.Unmarshal(body, &resp1)
+	if err != nil {
+		logger.WAFLog.Errorf("Error parsing JSON response: %v", err)
+		return false
+	}
+	logger.WAFLog.Infof("Raw response from pod: %+v", resp1.Valid)
+
+	isValid, err := strconv.ParseBool(resp1.Valid)
+	if err != nil {
+		logger.WAFLog.Errorf("Error converting string to bool: %v", err)
+		return false
+	}
+	logger.WAFLog.Infof("Response from pod: %v", isValid)
+
+	return isValid
 }
 
 func Init() {

@@ -4,7 +4,7 @@
     "proxyLogFileName": "logs/proxy_logs.txt",
     "wafLogFileName": "logs/waf_logs.txt",
     "destinationToLabel": {
-        "/": "SQL",
+        "/": "XML",
         "/test": "XSS"
     }
 }
