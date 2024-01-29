@@ -1,0 +1,29 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Python Pod API
+paths:
+  /verify:
+    post:
+      summary: Filters HTTP Messages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          description: A JSON object indicating validity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: string
+                  time:
+                    type: string

@@ -141,9 +141,9 @@ func VerifyMessage(message message.Message) bool {
 }
 
 func processMessage(pod Pod, message message.Message) bool {
-	// TODO: Implement this function to process the message using the given pod
 	logger.WAFLog.Infof("Processing message %+v using pod %+v", message.Destination, pod.podType)
 
+	// TODO Make this a post request that sends the client message to the pod
 	// Create the URL for the /verify endpoint
 	verifyURL := fmt.Sprintf("http://%s:%s/verify", "localhost", "3032")
 

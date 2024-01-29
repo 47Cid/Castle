@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-LABEL type="SQL"
+LABEL type="XSS"
 
 LABEL weight="1"
 

@@ -4,7 +4,7 @@ WORKDIR /app
 
 ADD . /app
 
-LABEL type="XML"
+LABEL type="DOS"
 
 LABEL weight=1
 

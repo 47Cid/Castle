@@ -2,6 +2,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const winston = require('winston');
+const xss = require('xss');
 const app = express();
 const port = 3030;
 
@@ -25,7 +26,12 @@ app.use(morgan((tokens, req, res) => {
   ].join(' ')
 }, { stream: { write: (message) => logger.info(message.trim()) } }));
 
+// Basic XSS filtering
 app.get('/verify', (req, res) => {
+  const sanitizedInput = xss(req.query.input);
+  if (req.query.input !== sanitizedInput) {
+    return res.json({ isValid: "False", time: new Date().toISOString() });
+  }
   res.json({ isValid: "True", time: new Date().toISOString() });
 });
 

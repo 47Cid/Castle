@@ -4,7 +4,7 @@ WORKDIR /app
 
 ADD . /app
 
-LABEL type="DOS"
+LABEL type="SQL"
 
 LABEL weight="1"
 
