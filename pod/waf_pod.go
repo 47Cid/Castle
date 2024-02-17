@@ -145,7 +145,7 @@ func processMessage(pod Pod, message message.Message) bool {
 
 	// TODO Make this a post request that sends the client message to the pod
 	// Create the URL for the /verify endpoint
-	verifyURL := fmt.Sprintf("http://%s:%s/verify", "localhost", "3032")
+	verifyURL := fmt.Sprintf("http://%s:%s/verify", pod.containerIP, pod.containerPort)
 
 	// Send an HTTP GET request to the server running inside the pod
 	resp, err := http.Get(verifyURL)
